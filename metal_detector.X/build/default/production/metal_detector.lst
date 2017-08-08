@@ -1,0 +1,722 @@
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ; Copyright 2017 Jacques Deschênes
+                      00002 ; This file is part of metal_detector.
+                      00003 ;
+                      00004 ;     metal_detector is free software: you can redistribute it and/or modify
+                      00005 ;     it under the terms of the GNU General Public License as published by
+                      00006 ;     the Free Software Foundation, either version 3 of the License, or
+                      00007 ;     (at your option) any later version.
+                      00008 ;
+                      00009 ;     metal_detector is distributed in the hope that it will be useful,
+                      00010 ;     but WITHOUT ANY WARRANTY; without even the implied warranty of
+                      00011 ;     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+                      00012 ;     GNU General Public License for more details.
+                      00013 ;
+                      00014 ;     You should have received a copy of the GNU General Public License
+                      00015 ;     along with metal_detector.  If not, see <http://www.gnu.org/licenses/>.
+                      00016 ;
+                      00017 ; NAME: metal_dectector
+                      00018 ; AUTHOR: Jacques Deschênes
+                      00019 ; DESCRIPTION: A simple metal detector designed around a PIC10F322 and a Common base
+                      00020 ;              Colpitts oscillator running at 460 Khz for the loop dectector.    
+                      00021 ;              The MCU use an external crystal oscillator for stability. 
+                      00022 ;              The output of the Colpitts oscillator drive the T0CKI  input and
+                      00023 ;              TIMER0 is used to count the number of cycles in a fixed interval
+                      00024 ;              of 32 msec.  TIMER2 is used for 2 purposes. First is as a period
+                      00025 ;              timer for the audio tone generator, using PWM1, which frequency is fixed at 500 Hertz.
+                      00026 ;              Secondly the output scaler of TIMER2 is set to 16 thus that after 16 audio period
+                      00027 ;              an interrupt is triggered. Everything append inside the interrupt service
+                      00028 ;              routine. The value of TMR0 register is compared with the last run value.    
+                      00029 ;              Each time this TMR0>last the slope variable is incremented. Each time
+                      00030 ;              TMR0<last the slope variable is decremented. If the absolute value of
+                      00031 ;              slope is >= TR_LVL constant the audio tone is activated. The tone is
+                      00032 ;              disabled and variable slope reset to 0 each time TMR0==last.
+                      00033 ;              This simple algorithm requiring only 66 instructions works quite
+                      00034 ;              well. The dectection loop must be kept in movement because the alogorithm
+                      00035 ;              check for change in frequency when the sweep is stopped over a detected 
+                      00036 ;              object the oscillator frequency stabilize the detector stop
+                      00037 ;              sounding.
+                      00038 ;
+                      00039 ; DATE: 2017-08-07
+                      00040 ; COPYRIGHT: 2017 Jacques Deschênes
+                      00041  
+                      00042     
+                      00043     include p10f322.inc
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ; Build date : May 17 2017
+                      00005 ;  MPASM PIC10F322 processor include
+                      00006 ; 
+                      00007 ;  (c) Copyright 1999-2017 Microchip Technology, All rights reserved
+                      00008 ;==========================================================================
+                      00009 
+                      00705         LIST
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00044     radix dec 
+                      00045     
+2007   3FE7           00046     __config _WDTE_OFF&_FOSC_EC&_MCLRE_ON
+                      00047 
+  00022F4D            00048 XOFR equ 143181 ; crystal oscillator frequency Mhz
+  00008BD3            00049 FCY  equ  XOFR/4  ; 35795 Mhz ; MCU cycle frequency
+  00000117            00050 TCY  equ 279 ; instrcution cycle in nsec
+                      00051 
+                      00052     
+  00000040            00053 RAM0  equ 64 ; RAM base address
+  00000040            00054 RAM_SIZE equ 64 
+                      00055   
+                      00056 variables  udata RAM0
+0040                  00057 last res 1 ; last TMR0 count copied from variable 'run' at 'save_run'.
+0041                  00058 run res 1   ; current run TMR0 count read at beginning of 'tmr2_isr'.
+0042                  00059 slope res 1 ; direction of change in frequency of detection oscillator.
+0043                  00060 temp res 1 ; temporary working variable
+0044                  00061 w_temp res 1 ; save W register at isr entry
+0045                  00062 s_temp res 1 ; save STATUS register at isr entry
+                      00063  
+                      00064 ; sound trigger level
+                      00065 ; frequency must change in same direction TR_LEVEL times in a row to trigger sound. 
+  00000003            00066 TR_LVL equ 3
+                      00067 
+                      00068 ; MCU reset entry point 
+                      00069     org 0
+0000   2???           00070     goto init
+                      00071     
+                      00072 ; MCU interrupt service routine entry point.    
+                      00073     org 4
+0004                  00074 isr:
+                      00075     ; save W and STATUS
+0004   00??           00076     movwf w_temp
+0005   0E03           00077     swapf STATUS,W
+0006   00??           00078     movwf s_temp
+0007                  00079 tmr2_isr:    
+0007   108C           00080     bcf PIR1,TMR2IF
+                      00081     ; save current value of TMR0 in run
+0008   0801           00082     movfw TMR0
+0009   00??           00083     movwf run
+                      00084     ; compare TMR0 with 'last'
+Message[305]: Using default destination of 1 (file).
+000A   02??           00085     subwf last
+000B   1903           00086     skpnz
+000C   2???           00087     goto null ; TMR0==last
+000D   1C03           00088     skpc
+000E   2???           00089     goto positive
+                      00090 ; TMR0<last    
+000F                  00091 negative:    
+Message[305]: Using default destination of 1 (file).
+000F   03??           00092     decf slope
+0010   2???           00093     goto check
+                      00094 ; TMR0>last    
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0011                  00095 positive: 
+Message[305]: Using default destination of 1 (file).
+0011   0A??           00096     incf slope
+                      00097 ; compare abs(slope) with TR_LVL    
+0012                  00098 check:
+0012   08??           00099     movfw slope
+0013   00??           00100     movwf temp
+0014   1F80           00101     btfss temp,7
+0015   2???           00102     goto abs
+                      00103     ; slope is negative compute its absolute value.
+Message[305]: Using default destination of 1 (file).
+0016   09??           00104     comf temp
+Message[305]: Using default destination of 1 (file).
+0017   0A??           00105     incf temp
+0018                  00106 abs:; ; temp=abs(slope)    
+                      00107     ; compare with TR_LVL
+0018   3003           00108     movlw TR_LVL
+Message[305]: Using default destination of 1 (file).
+0019   02??           00109     subwf temp
+001A   1C03           00110     skpc
+                      00111     ; slope<TR_LVL no change to sound output
+001B   2???           00112     goto save_run
+                      00113     ; slope>=TR_LVL active sound output
+001C   1716           00114     bsf PWM1CON,PWM1OE
+001D   2???           00115     goto save_run
+001E                  00116 null:
+001E   01??           00117     clrf slope
+001F                  00118 no_sound:
+                      00119    ; disable sound when no change in frequency. 
+001F   1316           00120    bcf PWM1CON,PWM1OE
+                      00121 ; save last run count
+                      00122 ; to compare with TMR0 value in next isr run   
+0020                  00123 save_run:
+0020   08??           00124     movfw run
+0021   00??           00125     movwf last
+0022   0181           00126     clrf TMR0
+0023                  00127 isr_exit:
+                      00128     ; restore W and STATUS
+0023   0E??           00129     swapf s_temp,W
+0024   0083           00130     movwf STATUS
+0025   0E??           00131     swapf w_temp,F
+0026   0E??           00132     swapf w_temp,W
+0027   0009           00133     retfie
+                      00134     
+                      00135 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00136 ;    MCU hardware initialisation
+                      00137 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
+0028                  00138 init:
+                      00139     ; clear RAM
+0028   3040           00140     movlw RAM0
+0029   0084           00141     movwf FSR
+002A                  00142 clear_ram:    
+002A   0180           00143     clrf INDF
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Message[305]: Using default destination of 1 (file).
+002B   0A84           00144     incf FSR
+002C   1F84           00145     btfss FSR,7
+002D   2???           00146     goto clear_ram
+                      00147     ;disable all analog inputs
+002E   0188           00148     clrf ANSELA
+                      00149     ; RA0 is audio output
+002F   1006           00150     bcf TRISA,RA0
+                      00151     ; no pullup on T0CKI
+0030   1109           00152     bcf WPUA,RA2
+                      00153     ; TIMR0 clocked from T0CKI input. Disable prescaler
+0031   3028           00154     movlw (1<<PSA)|(1<<T0CS)
+0032   008E           00155     movwf OPTION_REG
+                      00156     ;  configuring TMR2 and PWM1 for audio output
+                      00157     ; TMR2 trigger an interrupt every 32 msec.
+                      00158     ;TMR2  prescale=64, postscale=16
+0033   307B           00159     movlw (15<<TOUTPS0)|(3<<T2CKPS0)
+0034   0093           00160     movwf T2CON
+                      00161     ; configure PWM1 for 500 hz 50% duty cycle tone
+0035   306F           00162     movlw 111
+0036   0092           00163     movwf PR2 ; 2 msec period
+0037   1003           00164     clrc
+0038   0C12           00165     rrf PR2,W
+0039   0095           00166     movwf PWM1DCH
+003A   0194           00167     clrf PWM1DCL
+003B   1796           00168     bsf PWM1CON,PWM1EN
+003C   1716           00169     bsf PWM1CON,PWM1OE
+003D   1513           00170     bsf T2CON,TMR2ON ;enable TMR2/PWM1 clock 
+                      00171     ; enable interrupts
+003E   148D           00172     bsf PIE1,TMR2IE
+003F   30C0           00173     movlw (1<<PEIE)|(1<<GIE)
+0040   008B           00174     movwf INTCON
+                      00175     ; idle loop everything done in 'isr' routine.
+0041   2???           00176     goto $
+                      00177     
+                      00178     
+3FE7                  00179     end 
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  5
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ADCON                             0000001F
+ADCS0                             00000005
+ADCS1                             00000006
+ADCS2                             00000007
+ADFVR0                            00000000
+ADFVR1                            00000001
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRES                             0000001E
+ANSA0                             00000000
+ANSA1                             00000001
+ANSA2                             00000002
+ANSELA                            00000008
+BORCON                            0000003F
+BORFS                             00000006
+BORRDY                            00000000
+C                                 00000000
+CFGS                              00000006
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CLC1CON                           00000031
+CLC1GLS0                          00000035
+CLC1GLS1                          00000036
+CLC1GLS2                          00000037
+CLC1GLS3                          00000038
+CLC1IE                            00000003
+CLC1IF                            00000003
+CLC1POL                           00000034
+CLC1SEL0                          00000032
+CLC1SEL1                          00000033
+CLKRCON                           00000026
+CLKROE                            00000006
+CWG1CON0                          00000039
+CWG1CON1                          0000003A
+CWG1CON2                          0000003B
+CWG1DBF                           0000003D
+CWG1DBF0                          00000000
+CWG1DBF1                          00000001
+CWG1DBF2                          00000002
+CWG1DBF3                          00000003
+CWG1DBF4                          00000004
+CWG1DBF5                          00000005
+CWG1DBR                           0000003C
+CWG1DBR0                          00000000
+CWG1DBR1                          00000001
+CWG1DBR2                          00000002
+CWG1DBR3                          00000003
+CWG1DBR4                          00000004
+CWG1DBR5                          00000005
+D1N                               00000000
+D1S0                              00000000
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  6
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+D1S1                              00000001
+D1S2                              00000002
+D1T                               00000001
+D2N                               00000002
+D2S0                              00000004
+D2S1                              00000005
+D2S2                              00000006
+D2T                               00000003
+D3N                               00000004
+D3S0                              00000000
+D3S1                              00000001
+D3S2                              00000002
+D3T                               00000005
+D4N                               00000006
+D4S0                              00000004
+D4S1                              00000005
+D4S2                              00000006
+D4T                               00000007
+DC                                00000001
+F                                 00000001
+FCY                               00008BD3
+FREE                              00000004
+FSR                               00000004
+FVRCON                            0000001D
+FVREN                             00000007
+FVRRDY                            00000006
+G1ARSEN                           00000006
+G1ASDLA0                          00000004
+G1ASDLA1                          00000005
+G1ASDLB0                          00000006
+G1ASDLB1                          00000007
+G1ASDSCLC1                        00000001
+G1ASDSFLT                         00000000
+G1ASE                             00000007
+G1CS0                             00000000
+G1EN                              00000007
+G1IS0                             00000000
+G1IS1                             00000001
+G1OEA                             00000005
+G1OEB                             00000006
+G1POL                             00000000
+G1POLA                            00000003
+G1POLB                            00000004
+G2POL                             00000001
+G3POL                             00000002
+G4D1N                             00000000
+G4D1T                             00000001
+G4D2N                             00000002
+G4D2T                             00000003
+G4D3N                             00000004
+G4D3T                             00000005
+G4D4N                             00000006
+G4D4T                             00000007
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  7
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+G4POL                             00000003
+GIE                               00000007
+GO_NOT_DONE                       00000001
+HFIOFR                            00000003
+HFIOFS                            00000000
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IOCAF                             0000001C
+IOCAF0                            00000000
+IOCAF1                            00000001
+IOCAF2                            00000002
+IOCAF3                            00000003
+IOCAN                             0000001B
+IOCAN0                            00000000
+IOCAN1                            00000001
+IOCAN2                            00000002
+IOCAN3                            00000003
+IOCAP                             0000001A
+IOCAP0                            00000000
+IOCAP1                            00000001
+IOCAP2                            00000002
+IOCAP3                            00000003
+IOCIE                             00000003
+IOCIF                             00000000
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRP                               00000007
+LATA                              00000007
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LC1D1S0                           00000000
+LC1D1S1                           00000001
+LC1D1S2                           00000002
+LC1D2S0                           00000004
+LC1D2S1                           00000005
+LC1D2S2                           00000006
+LC1D3S0                           00000000
+LC1D3S1                           00000001
+LC1D3S2                           00000002
+LC1D4S0                           00000004
+LC1D4S1                           00000005
+LC1D4S2                           00000006
+LC1EN                             00000007
+LC1G1D1N                          00000000
+LC1G1D1T                          00000001
+LC1G1D2N                          00000002
+LC1G1D2T                          00000003
+LC1G1D3N                          00000004
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+LC1G1D3T                          00000005
+LC1G1D4N                          00000006
+LC1G1D4T                          00000007
+LC1G1POL                          00000000
+LC1G2D1N                          00000000
+LC1G2D1T                          00000001
+LC1G2D2N                          00000002
+LC1G2D2T                          00000003
+LC1G2D3N                          00000004
+LC1G2D3T                          00000005
+LC1G2D4N                          00000006
+LC1G2D4T                          00000007
+LC1G2POL                          00000001
+LC1G3D1N                          00000000
+LC1G3D1T                          00000001
+LC1G3D2N                          00000002
+LC1G3D2T                          00000003
+LC1G3D3N                          00000004
+LC1G3D3T                          00000005
+LC1G3D4N                          00000006
+LC1G3D4T                          00000007
+LC1G3POL                          00000002
+LC1G4D1N                          00000000
+LC1G4D1T                          00000001
+LC1G4D2N                          00000002
+LC1G4D2T                          00000003
+LC1G4D3N                          00000004
+LC1G4D3T                          00000005
+LC1G4D4N                          00000006
+LC1G4D4T                          00000007
+LC1G4POL                          00000003
+LC1INTN                           00000003
+LC1INTP                           00000004
+LC1MODE0                          00000000
+LC1MODE1                          00000001
+LC1MODE2                          00000002
+LC1OE                             00000006
+LC1OUT                            00000005
+LC1POL                            00000007
+LCEN                              00000007
+LCINTN                            00000003
+LCINTP                            00000004
+LCMODE0                           00000000
+LCMODE1                           00000001
+LCMODE2                           00000002
+LCOE                              00000006
+LCOUT                             00000005
+LFIOFR                            00000001
+LWLO                              00000005
+N1CKS0                            00000000
+N1CKS1                            00000001
+N1EN                              00000007
+N1OE                              00000006
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE  9
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+N1OUT                             00000005
+N1PFM                             00000000
+N1POL                             00000004
+N1PWS0                            00000005
+N1PWS1                            00000006
+N1PWS2                            00000007
+NCO1ACC                           00000027
+NCO1ACC0                          00000000
+NCO1ACC1                          00000001
+NCO1ACC10                         00000002
+NCO1ACC11                         00000003
+NCO1ACC12                         00000004
+NCO1ACC13                         00000005
+NCO1ACC14                         00000006
+NCO1ACC15                         00000007
+NCO1ACC16                         00000000
+NCO1ACC17                         00000001
+NCO1ACC18                         00000002
+NCO1ACC19                         00000003
+NCO1ACC2                          00000002
+NCO1ACC3                          00000003
+NCO1ACC4                          00000004
+NCO1ACC5                          00000005
+NCO1ACC6                          00000006
+NCO1ACC7                          00000007
+NCO1ACC8                          00000000
+NCO1ACC9                          00000001
+NCO1ACCH                          00000028
+NCO1ACCL                          00000027
+NCO1ACCU                          00000029
+NCO1CLK                           0000002E
+NCO1CON                           0000002D
+NCO1IE                            00000004
+NCO1IF                            00000004
+NCO1INC                           0000002A
+NCO1INC0                          00000000
+NCO1INC1                          00000001
+NCO1INC10                         00000002
+NCO1INC11                         00000003
+NCO1INC12                         00000004
+NCO1INC13                         00000005
+NCO1INC14                         00000006
+NCO1INC15                         00000007
+NCO1INC2                          00000002
+NCO1INC3                          00000003
+NCO1INC4                          00000004
+NCO1INC5                          00000005
+NCO1INC6                          00000006
+NCO1INC7                          00000007
+NCO1INC8                          00000000
+NCO1INC9                          00000001
+NCO1INCH                          0000002B
+NCO1INCL                          0000002A
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE 10
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+NCO1INCU                          0000002C
+NOT_BOR                           00000000
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_TO                            00000004
+NOT_WPUEN                         00000007
+OPTION_REG                        0000000E
+OSCCON                            00000010
+PCL                               00000002
+PCLATH                            0000000A
+PCLH0                             00000000
+PCON                              0000000F
+PEIE                              00000006
+PIE1                              0000000D
+PIR1                              0000000C
+PMADR                             00000020
+PMADR8                            00000000
+PMADRH                            00000021
+PMADRL                            00000020
+PMCON1                            00000024
+PMCON2                            00000025
+PMDAT                             00000022
+PMDATH                            00000023
+PMDATL                            00000022
+POL                               00000007
+PORTA                             00000005
+PR2                               00000012
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+PWM1CON                           00000016
+PWM1CON0                          00000016
+PWM1DCH                           00000015
+PWM1DCH0                          00000000
+PWM1DCH1                          00000001
+PWM1DCH2                          00000002
+PWM1DCH3                          00000003
+PWM1DCH4                          00000004
+PWM1DCH5                          00000005
+PWM1DCH6                          00000006
+PWM1DCH7                          00000007
+PWM1DCL                           00000014
+PWM1DCL0                          00000006
+PWM1DCL1                          00000007
+PWM1EN                            00000007
+PWM1OE                            00000006
+PWM1OUT                           00000005
+PWM1POL                           00000004
+PWM2CON                           00000019
+PWM2CON0                          00000019
+PWM2DCH                           00000018
+PWM2DCH0                          00000000
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PWM2DCH1                          00000001
+PWM2DCH2                          00000002
+PWM2DCH3                          00000003
+PWM2DCH4                          00000004
+PWM2DCH5                          00000005
+PWM2DCH6                          00000006
+PWM2DCH7                          00000007
+PWM2DCL                           00000017
+PWM2DCL0                          00000006
+PWM2DCL1                          00000007
+PWM2EN                            00000007
+PWM2OE                            00000006
+PWM2OUT                           00000005
+PWM2POL                           00000004
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RAM0                              00000040
+RAM_SIZE                          00000040
+RD                                00000000
+RP0                               00000005
+RP1                               00000006
+SBOREN                            00000007
+STATUS                            00000003
+SWDTEN                            00000000
+T0CS                              00000005
+T0SE                              00000004
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000013
+TCY                               00000117
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000006
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TR_LVL                            00000003
+TSEN                              00000005
+TSRNG                             00000004
+VREGCON                           0000003E
+VREGPM0                           00000000
+VREGPM1                           00000001
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE 12
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+W                                 00000000
+WDTCON                            00000030
+WDTPS0                            00000001
+WDTPS1                            00000002
+WDTPS2                            00000003
+WDTPS3                            00000004
+WDTPS4                            00000005
+WPUA                              00000009
+WPUA0                             00000000
+WPUA1                             00000001
+WPUA2                             00000002
+WPUA3                             00000003
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+XOFR                              00022F4D
+Z                                 00000002
+_.org_1_0041                      00000041
+_BOREN_NSLEEP                     00003FFD
+_BOREN_OFF                        00003FF9
+_BOREN_ON                         00003FFF
+_BOREN_SBODEN                     00003FFB
+_BORV_24                          00003FFF
+_BORV_27                          00003BFF
+_BORV_HI                          00003BFF
+_BORV_LO                          00003FFF
+_CONFIG                           00002007
+_CP_OFF                           00003FFF
+_CP_ON                            00003F7F
+_DEVID1                           00002006
+_FOSC_EC                          00003FFF
+_FOSC_INTOSC                      00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LPBOR_OFF                        00003DFF
+_LPBOR_ON                         00003FFF
+_LVP_OFF                          00003EFF
+_LVP_ON                           00003FFF
+_MCLRE_OFF                        00003FBF
+_MCLRE_ON                         00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FDF
+_WDTE_NSLEEP                      00003FF7
+_WDTE_OFF                         00003FE7
+_WDTE_ON                          00003FFF
+_WDTE_SWDTEN                      00003FEF
+_WRT_ALL                          000027FF
+_WRT_BOOT                         000037FF
+_WRT_HALF                         00002FFF
+_WRT_OFF                          00003FFF
+__10F322                          00000001
+MPASM 5.74  /HOME/JACQUES/GITHUB/METAL_DETEC   8-7-2017  10:42:34         PAGE 13
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+abs                               00000018
+check                             00000012
+clear_ram                         0000002A
+init                              00000028
+isr                               00000004
+isr_exit                          00000023
+last                              00000040
+negative                          0000000F
+no_sound                          0000001F
+null                              0000001E
+positive                          00000011
+run                               00000041
+s_temp                            00000045
+save_run                          00000020
+slope                             00000042
+temp                              00000043
+tmr2_isr                          00000007
+w_temp                            00000044
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :     7 reported,     0 suppressed
+
+
