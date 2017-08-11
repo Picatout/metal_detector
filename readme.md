@@ -10,6 +10,8 @@ schematic
 
 description
 -----------
+  The **PIC10F322** is clocked by an external crystal oscillator for stability. The chosen oscillator frequency is 14.3181Mhz (available on hand, any value up to
+ 16Mhz is good).
 
   The Colpitts oscillator use a 6" coil as detector. The oscillator output is sent to **T0CKI** input of PIC10F322 and **TIMER0** count the number of oscillator 
 cycles during a fixed lapse of 32 msec. This 32 msec period is determined by TIMER2 which is used as period counter for the **PWM1** audio generator. The alarm audio tone
@@ -19,7 +21,7 @@ If *TMR0=last*  **slope** is reset to 0 and the tone is disabled.
 
   The oscillator frequency is around 460 Khz that give 14720 cycles for a lapse of 32 msec. Only the modulo 256 count is kept as from one lapse to the next this value vary only for a few count. 
 
-  When a tone is triggered the detector must swept back and forth over the spot to confirm detection. When the coil stand still over the object the oscillator stabilize
+  When a tone is triggered the detector must be swept back and forth over the spot to confirm detection. When the coil stand still over the object the oscillator stabilize
 at a new frequency and the alarm stop.
 
 some math
@@ -29,7 +31,9 @@ value of register PR2 for a tone of 500 Hertz
 
 PR2=(FCY/PRESCACLE/500)-1
 
-FCY=XOfreq/4    XOfreq=14.3181Mhz (This what I had available, the PIC10F322 as maximum frequency of 16Mhz).
+FCY=XOfreq/4  
+
+XOfreq=14.3181Mhz
 
 PRESCALE=64
 
