@@ -68,9 +68,9 @@ parts list
 ----------
 
 * 1 PIC10F322  DIP-8 format MCU  **U2**
-* 2 DIP-8 socket
+* 2 DIP-8 socket for **U2** and **X1**
 * 1 Crystal oscillator CTS MXO45HS 14.3181Mhz  **X1**
-* 1 LM78M05  5 volt regulator TO-220  **U1**
+* 1 LM78M05CT  5 volt regulator TO-220  **U1**
 * 1 2N3904 NPN TO-92 general purpose junction transistor **Q1**
 * 1 SPST rocker switch 1/2" x 3/4" size, power switch  **SW1**
 * 1 9 volt battery holder
@@ -94,9 +94,10 @@ parts list
 * 3  1 row 2 pins connector .1" spacing for **L1, J2 and SW1**
 * 3  1 row 2 holes female connector .1" spacing for **L1,J2 and SW1**
 * 1  1 row 5 pins connector for ICSP **J1** (pickit 3 programmer).
-* 1 bakeline prototyping board 7cm x 9cm.
+* 1 bakelite prototyping board 7cm x 9cm with 0.1" spacing copper pad on one side. 
 * 1 piece of pine 3/4" thick, large enough to cut 6" disk.
 * 1 stick to used as handle glued to detector disk
 * 1 about 4 feet 2 x 22AWG wires cable  to link detection coil to circuit board.
-* 1 electrical tape to protect L1 winding.
+* 4 feet vinyl electrical tape to protect L1 winding.
+* 1 12" x 12" x 1/8" birch plywood to make circuit board housing box.
 
