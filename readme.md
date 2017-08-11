@@ -23,6 +23,8 @@ an alaram the absolute value of **slope** must be greater or egual to **TR_LVL**
 
   When a tone is triggered the detector must be swept back and forth over the spot to confirm detection. When the coil stand still over the object the oscillator stabilize at a new frequency and the alarm stop.
 
+  This simple scheme allow for oscillator frequency drift which are too slow to trigger an alarm.
+
 some math
 ---------
 
@@ -42,7 +44,7 @@ The **32 msec** sample period and **TR_LVL** value of 2 are empiral from testing
 
 Oscillator count modulo 256 during 32 msec sample period
 
-**TMR0**=(460000*0.032)%256=**128**    (perfect for an 8 bits counter, range center, giving maximum room in both frequency increase and decrease.) 
+**TMR0**=(460000*0.032)%256=**128**    (at TMR0 range center, perfect! Give room for oscillator drift in both direction.) 
 
 Electronic assembly
 --------------------
