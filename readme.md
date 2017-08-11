@@ -38,13 +38,13 @@ XOfreq=14.3181Mhz
 
 PRESCALE=64
 
-**PR2**=(3.5795/64/500)-1=**111**  (division rounded to nearest integer)
+**PR2**=(3,579,525/64/500)-1=**111**  (division rounded to nearest integer)
 
 The **32 msec** sample period and **TR_LVL** value of 2 are empiral from testing different setting.
 
 Oscillator count modulo 256 during 32 msec sample period
 
-**TMR0**=(460000*0.032)%256=**128**    (at TMR0 range center, perfect! Give room for oscillator drift in both direction.) 
+**TMR0**=(460,000*0.032)%256=**128**    (at TMR0 range center, perfect! Give room for oscillator drift in both direction.) 
 
 Electronic assembly
 --------------------
@@ -58,10 +58,45 @@ of the internal MCU RC oscillator. XO is running at 14.3181 Mhz because it is wh
 Machanical assembly
 -------------------
 
-  A disk was cut in a 3/4" thick pine plank and a groove was carved on the circumference using a round file. 17 turns of 22 AWG magnet wire were wounded in this groove for a measured inductance of 115µH. A 1/2" square poplar stick was glued to this disk as an handle. To hold the circuit board 1/8" thick plywood was used
+  A disk was cut in a 3/4" thick pine plank and a groove was carved on the circumference using a round file. 17 turns of 22 AWG magnet wire was wounded in this groove for a measured inductance of 115µH. A 1/2" square poplar stick was glued to this disk as an handle. To hold the circuit board 1/8" thick birch plywood was used
 to build a small box.
 
 ![final assemblay](finalAssembly.JPG)
 
 
- 
+parts list
+----------
+
+* 1 PIC10F322  DIP-8 format MCU  **U2**
+* 2 DIP-8 socket
+* 1 Crystal oscillator CTS MXO45HS 14.3181Mhz  **X1**
+* 1 LM78M05  5 volt regulator TO-220  **U1**
+* 1 2N3904 NPN TO-92 general purpose junction transistor **Q1**
+* 1 SPST rocker switch 1/2" x 3/4" size, power switch  **SW1**
+* 1 9 volt battery holder
+* 1 9 volt battery  **BT1**
+* 1 47µF/25 volt electrolytic capacitor **C1**
+* 1 1µF/25 volt electrolytic capacitor **C2**
+* 1 15K 1/4watt 1% resistor **R1**
+* 1 5k6 1/4watt 1% resistor **R2**
+* 1 120 1/4watt 1% resistor **R3**
+* 3 2.2nF ceramic NPO capacitor **C4,C5,C7**
+* 2 1nF ceramic capacitor **C6,C8**
+* 1 10pF ceramic capacitor **C10**
+* 1 33K 1/4watt 1% resistor **R4**
+* 4 100nF ceramic capacitor **C3,C9,C11,C12**
+* 3 470 1/4watt 1% resistor **R5,R6,R7**
+* 1 1N4148 diode  **D1**
+* 1 10K 1/4watt 1% resistor **R8**
+* 1 470µF/16volt electrolitic capacitor **C13**
+* 1 2" small speaker or jack for earphone **LS1**
+* 30 feet  22 AWG magnet wire for **L1**
+* 3  1 row 2 pins connector .1" spacing for **L1, J2 and SW1**
+* 3  1 row 2 holes female connector .1" spacing for **L1,J2 and SW1**
+* 1  1 row 5 pins connector for ICSP **J1** (pickit 3 programmer).
+* 1 bakeline prototyping board 7cm x 9cm.
+* 1 piece of pine 3/4" thick, large enough to cut 6" disk.
+* 1 stick to used as handle glued to detector disk
+* 1 about 4 feet 2 x 22AWG wires cable  to link detection coil to circuit board.
+* 1 electrical tape to protect L1 winding.
+
