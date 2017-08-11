@@ -63,6 +63,10 @@ to build a small box.
 
 ![final assemblay](finalAssembly.JPG)
 
+Testing metal detector
+----------------------
+
+Link to short video of detector testing [detector testing](https://youtu.be/6JHq25r9XMA)
 
 parts list
 ----------
@@ -100,4 +104,4 @@ parts list
 * 1 about 4 feet 2 x 22AWG wires cable  to link detection coil to circuit board.
 * 4 feet vinyl electrical tape to protect L1 winding.
 * 1 12" x 12" x 1/8" birch plywood to make circuit board housing box.
-
+* 1 small piece of 1/4" plywood to hold circuit board and box base.
