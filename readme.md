@@ -1,7 +1,8 @@
 metal_detector
 ==============
 
-A simple metal detector built around a PIC10F322 and a 2N3904 common base Colpitts oscillator.
+A simple metal detector built around a PIC10F322 and a 2N3904 common base Colpitts oscillator. Although this detector is not as sensitive as a commercial one,
+it is cheap to build and make a good weekend project.
 
 schematic
 ---------
