@@ -18,7 +18,7 @@ description
 cycles during a fixed lapse of 32 msec. This 32 msec period is fixed by **TIMER2** which is used as period counter for the **PWM1** audio generator. The alarm audio tone
 is at 500 hertz or 2 msec period. The postscaler of **TIMER2** is set to trigger an interrupt at every 16 audio period or 32 msec. The detection is done inside the interrupt service routine by comparing the value from **TMR0** register with the previous reading saved in variable **last**. Oscillator frequency must change in same direction some consecutives reading to signal a detection. The constant **TR_LVL** determine that number of consecutives changes.
 Variable **slope** is incremented when **TMR0>last** and decremented when **TMR0<last**. If **TMR0=last**  **slope** is reset to 0 and the tone is disabled. To trigger
-an alaram the absolute value of **slope** must be greater or egual to **TR_LVL**.
+an alarm the absolute value of **slope** must be greater or egual to **TR_LVL**.
 
   The oscillator frequency is around 460 Khz that give 14720 cycles for a lapse of 32 msec. Only the modulo 256 count is kept as from one lapse to the next this value vary only a few count. 
 
@@ -67,7 +67,7 @@ to build a small box.
 Testing metal detector
 ----------------------
 
-Link to short video of detector testing [detector testing](https://youtu.be/6JHq25r9XMA)
+Link to short video of [detector testing](https://youtu.be/6JHq25r9XMA)
 
 parts list
 ----------
