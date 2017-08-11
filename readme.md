@@ -27,10 +27,13 @@ construction
   A disk was cut in a 3/4" thick pine plank and a groove was carved on the circumference of this disk with a round file. 17 turns of 22 AWG magnet wire were wounded in this groove for a resulting inductance of 115µH. A 1/2" square poplar stick was glued to this disk as an handle. To hold the circuit board 1/8" thick plywood was used
 to build a small box.
 
+|[final assemblay](finalAssembly.JPG)
 electronic assembly
 --------------------
- The circuit is mounted on a 7mm x 9mm bakelike circuit board with single side 0.1" spaced copper pads. For stability an external crystal oscillator was used instead
+ The circuit is mounted on a 7cm x 9cm bakelike circuit board with single side 0.1" spaced copper pads. For stability an external crystal oscillator was used instead
 of the internal MCU RC oscillator. XO is running at 14.3181 Mhz because it is what I had in hand. This MCU can work up to 16Mhz. 
+
+![circuit board](circuitBoard.JPG)
 
 PR2 register value is (FCY/64/500 - 1) where 
    FCY is XOfreq/4.  
