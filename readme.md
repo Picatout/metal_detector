@@ -93,12 +93,14 @@ parts list
 * 3 470 1/4watt 1% resistor **R5,R6,R7**
 * 1 1N4148 diode  **D1**
 * 1 10K 1/4watt 1% resistor **R8**
+* 1 1K 1/4watt 1% resistor **R9**
+* 1 3mm LED power **D2**
 * 1 470µF/16volt electrolitic capacitor **C13**
 * 1 2" small speaker or jack for earphone **LS1**
 * 30 feet  22 AWG magnet wire for **L1**
-* 3  1 row 2 pins connector .1" spacing for **L1, J2 and SW1**
-* 3  1 row 2 holes female connector .1" spacing for **L1,J2 and SW1**
-* 1  1 row 5 pins connector for ICSP **J1** (pickit 3 programmer).
+* 4  1 row 2 pins connector .1" spacing for **J1,J2,J3,J4**
+* 4  1 row 2 holes female connector .1" spacing for **P1,P2,P3,P4**
+* 1  1 row 5 pins connector for ICSP **J5** (pickit 3 programmer).
 * 1 bakelite prototyping board 7cm x 9cm with 0.1" spacing copper pad on one side. 
 * 1 piece of pine 3/4" thick, large enough to cut 6" disk.
 * 1 stick to used as handle glued to detector disk
