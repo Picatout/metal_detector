@@ -41,7 +41,7 @@ PRESCALE=64
 
 **PR2**=(3,579,525/64/500)-1=**111**  (division rounded to nearest integer)
 
-The **32 msec** sample period and **TR_LVL** value of 2 are empiral from testing different setting.
+The **32 msec** sample period and **TR_LVL** value of 2 are empirical from testing different setting.
 
 Oscillator count modulo 256 during 32 msec sample period
 
@@ -56,7 +56,7 @@ of the internal MCU RC oscillator. XO is running at 14.3181 Mhz because it is wh
 ![circuit board](circuitBoard.JPG)
 
 
-Machanical assembly
+Mechanical assembly
 -------------------
 
   A disk was cut in a 3/4" thick pine plank and a groove was carved on the circumference using a round file. 17 turns of 22 AWG magnet wire was wounded in this groove for a measured inductance of 115µH. A 1/2" square poplar stick was glued to this disk as an handle. To hold the circuit board 1/8" thick birch plywood was used
